@@ -1,6 +1,7 @@
 package org.jpn.pg.lib.structuredoc.tlv;
 
-import org.jpn.pg.lib.datatype.numeric.ByteCalc;
+import org.jpn.pg.lib.datatype.numeric.ByteArrayCalc;
+import org.jpn.pg.lib.datatype.numeric.exception.ValueRangeException;
 import org.jpn.pg.lib.structuredoc.exception.UnsupportedSizeException;
 
 public class TLVLeaf {
@@ -55,9 +56,10 @@ public class TLVLeaf {
             throw new UnsupportedSizeException("[TLVLeaf.setLength()] TLV length over. This library supports only 4bytes or less. Your lenght size = " + lengthPart.length);
         }
 
-        for(int n=0; n<lengthPart.length; n++) {
-            this.length <<= 8;
-            this.length += ByteCalc.getPositive(lengthPart[n]);
+        try {
+            this.length = ByteArrayCalc.getPositive(lengthPart);
+        } catch (ValueRangeException e) {
+            throw new UnsupportedSizeException("[TLVLeaf.setLength()] TLV length over. This library supports only Integer.MAX_VALUE or less. Your first byte = " + lengthPart[0]);
         }
     }
 

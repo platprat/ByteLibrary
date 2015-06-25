@@ -3,6 +3,7 @@ package org.jpn.pg.lib.structuredoc.tlv;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 import org.jpn.pg.lib.structuredoc.exception.IllegalStructureException;
 import org.jpn.pg.lib.structuredoc.exception.UnsupportedSizeException;
@@ -24,21 +25,48 @@ public class TLVParser {
             }
         }
 
-        return (TLVLeaf[]) listTLV.toArray();
+        return toArray(listTLV);
     }
 
-    public static TLVLeaf[] parse(InputStream src, long limitLength) throws UnsupportedSizeException, IOException, IllegalStructureException {
+    private static TLVLeaf[] parse(InputStream src, long limitLength) throws UnsupportedSizeException, IOException, IllegalStructureException {
         ArrayList listTLV = new ArrayList();
+        long curLength = 0;
+
         while(true) {
             TLVLeaf cur = getNextLeaf(src);
             if(cur != null) {
                 listTLV.add(cur);
+                curLength += cur.getMyTLVLength();
             } else {
                 break;
             }
+
+            if(curLength == limitLength) {
+                break;
+            }
+
+            if(curLength > limitLength) {
+                throw new IllegalStructureException("[TLVParser.parse()] Illegal size. expected:" + limitLength + " actual:" + curLength);
+            }
         }
 
-        return (TLVLeaf[]) listTLV.toArray();
+        return toArray(listTLV);
+    }
+
+    private static TLVLeaf[] toArray(ArrayList list) {
+        if(list.isEmpty()) {
+            return null;
+        }
+
+        TLVLeaf[] dest = new TLVLeaf[list.size()];
+        Iterator itr = list.iterator();
+        int n = 0;
+        for(;itr.hasNext();) {
+            TLVLeaf cur = (TLVLeaf) itr.next();
+            dest[n] = cur;
+            n++;
+        }
+        return dest;
     }
 
     private static boolean isAllON(byte target, byte specificBits) {
